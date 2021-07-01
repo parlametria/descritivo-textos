@@ -55,6 +55,7 @@ falas %>%
 ### Alguns exemplos
 
 ```{r}
+set.seed(1313)
 falas %>% 
     select(nome, partido, uf, transcricao) %>% 
     sample_n(10) %>% 
@@ -80,9 +81,9 @@ falas %>%
     mutate(n = pmin(n, 2000)) %>% 
     ggplot(aes(x = n)) + 
     geom_histogram(binwidth = 50, boundary = 0, fill = "coral") + 
-    labs(title = "Número de falas por evento", 
+    labs(title = "Número de falas por parlamentar", 
          x = "Falas", 
-         y = "Eventos")
+         y = "Parlamentares")
 ```
 
 
