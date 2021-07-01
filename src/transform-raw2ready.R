@@ -10,13 +10,27 @@ read_many_files <- function(files, col_types) {
         map_df(read_csv, col_types = col_types)
 }
 
-transform_comissoes = function(path = "data/raw/comissoes-2019") {
-    falas_raw = read_many_files(list.files(
+transform_comissoes = function(path = "data/raw/comissoes") {
+    todos = list.files(
         path = here::here(path),
+        recursive = T,
         pattern = "*.csv",
         full.names = T
-    ),
-    col_types = "cicc")
+    )
+    
+    arq_metadados = todos[basename(files) == "metadados_transcricoes.csv"]
+    transcricoes = todos[basename(files) != "metadados_transcricoes.csv"]
+    
+    metadados = read_csv(
+        arq_metadados,
+        col_types = cols(
+            .default = col_character(),
+            data = col_date(format = "%d/%m/%Y"),
+            horario = col_time(format = "")
+        )
+    )
+    
+    falas_raw = read_many_files(transcricoes, col_types = "cicc")
     
     falas = falas_raw %>%
         mutate(
@@ -36,14 +50,15 @@ transform_comissoes = function(path = "data/raw/comissoes-2019") {
                  into = c("partido", "uf"),
                  sep = "-")
     
-    falas
+    falas %>% 
+        left_join(metadados, by = "id_evento")
 }
 
 
 main <- function(argv = NULL) {
     flog.threshold(TRACE)
-    in_comissoes = "data/raw/comissoes-2019"
-    out_comissoes = "data/ready/proposicoes.csv"
+    in_comissoes = "data/raw/comissoes"
+    out_comissoes = "data/ready/falas-comissoes.csv"
     
     flog.info(str_glue("Transformando falas em comissões de {in_comissoes}"))
     transform_comissoes(in_comissoes) %>%

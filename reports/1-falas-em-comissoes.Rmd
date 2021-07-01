@@ -12,7 +12,7 @@ knitr::opts_chunk$set(
   # warning = FALSE,
   # fig.cap = '',
   # fig.align = 'center',
-  fig.width = 6,
+  fig.width = 8,
   fig.height = 5
 )
 Sys.setenv(LANGUAGE="pt-br")
@@ -25,6 +25,7 @@ library(tidyverse)
 library(reactable)
 library(ggchicklet)
 library(ggbeeswarm)
+library(lubridate)
 library(hrbrthemes)
 theme_set(theme_ipsum_rc())
 
@@ -35,18 +36,19 @@ theme_set(theme_ipsum_rc())
 
 ```{r}
 falas = read_csv(here::here("data/ready/falas-comissoes.csv"), 
-                 col_types = "cicclccc")
+                 col_types = "cicclccccccDt")
+
+falas = falas %>% 
+  mutate(palavras = str_count(transcricao, '\\w+'), 
+         caracteres = str_length(transcricao), 
+         nome_display = str_glue("{nome} ({partido}-{uf})"))
 ```
-
-
 
 ```{r}
 falas %>% 
-    mutate(palavras = str_count(transcricao, '\\w+'), 
-           caracteres = str_length(transcricao)) %>% 
     summarise(falas = n(), 
               eventos = n_distinct(id_evento),
-              total_palavras = sum(palavras, na.rm = T),
+              milhoes_palavras = round(sum(palavras, na.rm = T) / 1e6, 1),
               mediana_palavras = median(palavras, na.rm = T), 
               mediana_caracteres = median(caracteres, na.rm = T)) %>% 
     reactable()
@@ -62,6 +64,39 @@ falas %>%
     reactable(striped = T)
 ```
 
+## Eventos no tempo
+
+```{r}
+falas %>% 
+  mutate(mes = lubridate::floor_date(data, "months")) %>% 
+  group_by(mes, categoria_comissao) %>% 
+  summarise(eventos = n_distinct(id_evento), .groups = "drop") %>% 
+  ggplot(aes(x = mes, y = eventos, fill = categoria_comissao)) + 
+  geom_col()
+
+```
+
+Exemplos de comissões de cada tipo
+
+```{r}
+falas %>% 
+  count(categoria_comissao, comissao, sort = T) %>% 
+  group_by(categoria_comissao) %>% 
+  slice_max(n, n = 1) %>% 
+  reactable(striped = T)
+```
+
+O que entra em "Outros"?
+
+```{r}
+falas %>% 
+  filter(categoria_comissao == "Outros") %>% 
+  distinct(comissao) %>% 
+  reactable(striped = T)
+```
+
+
+## Texto nos eventos
 
 ```{r}
 falas %>% 
@@ -76,12 +111,12 @@ falas %>%
 ```{r}
 falas %>% 
     filter(parlamentar) %>% 
-    mutate(nome_display = str_glue("{nome} ({partido}-{uf})")) %>% 
     count(nome_display) %>% 
     mutate(n = pmin(n, 2000)) %>% 
     ggplot(aes(x = n)) + 
     geom_histogram(binwidth = 50, boundary = 0, fill = "coral") + 
     labs(title = "Número de falas por parlamentar", 
+         subtitle = "Limitado a até 2000 falas",
          x = "Falas", 
          y = "Parlamentares")
 ```
@@ -93,5 +128,49 @@ falas %>%
     mutate(nome = str_glue("{nome} ({partido}-{uf})")) %>% 
     count(nome, sort = T, name = "falas") %>% 
     reactable(striped = T, searchable = T)
+```
+
+## Comissões permanentes com transcrições em 2021
+
+```{r}
+falas %>% 
+  filter(categoria_comissao == "Comissão Permanente", year(data) == 2021) %>% 
+  distinct(comissao) %>% 
+  reactable(striped = T)
+```
+
+
+## Parlamentares que mais falam por comissão em 2021
+
+```{r}
+falas %>% 
+  filter(categoria_comissao == "Comissão Permanente", year(data) == 2021, parlamentar) %>% 
+  group_by(comissao, nome_display) %>% 
+  summarise(palavras = sum(palavras), 
+            .groups = "drop_last") %>% 
+  slice_max(palavras, n = 5) %>% 
+  arrange(comissao, -palavras) %>% 
+  ungroup() %>% 
+  reactable(striped = T, 
+            searchable = T)
+  
+```
+
+## Partidos
+
+```{r}
+falas %>%
+  filter(categoria_comissao == "Comissão Permanente",
+         year(data) == 2021,
+         parlamentar) %>%
+  group_by(comissao, partido) %>%
+  summarise(palavras = sum(palavras),
+            .groups = "drop_last") %>%
+  slice_max(palavras, n = 5) %>%
+  # mutate(rank = rank(palavras)) %>% 
+  arrange(comissao,-palavras) %>%
+  ungroup() %>%
+  reactable(striped = T,
+            searchable = T)
 ```
 
