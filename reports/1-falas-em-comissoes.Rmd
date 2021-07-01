@@ -3,7 +3,6 @@ title: "Falas nas comissões permanentes"
 output:
   html_document:
     theme: paper
-    css: styles.css
 ---
 
 ```{r setup, include=FALSE, echo=FALSE}
@@ -32,10 +31,14 @@ theme_set(theme_ipsum_rc())
 # source(here::here("code/read_ready.R"))
 ```
 
+### Totais
+
 ```{r}
 falas = read_csv(here::here("data/ready/falas-comissoes.csv"), 
                  col_types = "cicclccc")
 ```
+
+
 
 ```{r}
 falas %>% 
@@ -48,6 +51,17 @@ falas %>%
               mediana_caracteres = median(caracteres, na.rm = T)) %>% 
     reactable()
 ```
+
+### Alguns exemplos
+
+```{r}
+falas %>% 
+    select(nome, partido, uf, transcricao) %>% 
+    sample_n(10) %>% 
+    reactable(striped = T)
+```
+
+
 ```{r}
 falas %>% 
     count(id_evento) %>% 
