@@ -8,4 +8,9 @@ Dados de comissões:
 2.  Coloque-as na pasta `data/raw/comissoes-2019`
 3.  ./src/transform-raw2ready.R gerará um csv em `data/ready`
 
+Dados de proposições:
+
+1. Baixe os dados de proposições, disponíveis [aqui](https://drive.google.com/drive/folders/1SvDIpYoHOwxpedU8bCZnuavJQsy34jDo?usp=sharing).
+2. Coloque-os na pasta `data/ready`
+
 Os notebooks em `reports/` usam esses dados.
