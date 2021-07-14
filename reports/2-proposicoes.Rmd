@@ -1,0 +1,170 @@
+---
+title: "Textos de proposições"
+output:
+  html_document:
+    theme: paper
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  # message = FALSE,
+  # warning = FALSE,
+  # fig.cap = '',
+  # fig.align = 'center',
+  fig.width = 6,
+  fig.height = 5
+)
+Sys.setenv(LANGUAGE="pt-br")
+Sys.setlocale("LC_TIME", "pt_BR")
+options(scipen = 999)
+```
+
+```{r warning=FALSE, message=FALSE}
+library(tidyverse)
+library(reactable)
+library(ggchicklet)
+library(ggbeeswarm)
+library(hrbrthemes)
+library(here)
+theme_set(theme_ipsum_rc())
+```
+
+### Quantidade de proposições
+
+```{r}
+proposicoes = readr::read_csv(here::here("data/ready/proposicoes.csv"),
+                              col_types = "cciTiccccTc")
+```
+
+```{r}
+totais = proposicoes %>% 
+  summarise(palavras_proposicoes = str_count(text_prop, '\\w+'),
+            caracteres_proposicoes = str_length(text_prop))
+```
+
+#### Totais
+
+```{r}
+totais %>% 
+  summarise(Proposicoes = n(),
+            `Palavras (milhões)` = round(sum(palavras_proposicoes, na.rm = T) / 1e6, 1),
+            `Mediana palavras` = median(palavras_proposicoes, na.rm = T),
+            `Mediana caracteres` = median(caracteres_proposicoes, na.rm = T)) %>% 
+  reactable()
+```
+
+#### Por ano
+
+```{r}
+proposicoes %>% 
+  count(ano, sort = T) %>% 
+  ggplot(aes(x = ano,
+             y = n)) +
+  geom_chicklet(fill = "steelblue") +
+  labs(x = NULL,
+       y = "nº de proposições",
+       title = "Proposições por ano")
+```
+
+#### Por tipo
+
+```{r}
+proposicoes %>% 
+  count(siglaTipo) %>% 
+  slice_max(order_by = n,
+            n = 15) %>% 
+  ggplot(aes(x = reorder(siglaTipo, -n),
+             y = n)) +
+  geom_chicklet(width = .7,
+                fill = "tomato") +
+  labs(x = "Tipo",
+       y = "Quantidade",
+       title = "Tipos de proposições mais frequentes")
+```
+
+#### Desde 2019
+
+```{r}
+legislatura_atual <- proposicoes %>% 
+  filter(ano >= 2019)
+```
+
+```{r}
+totais_legislatura = legislatura_atual %>% 
+  summarise(palavras = str_count(text_prop, '\\w+'),
+            caracteres = str_length(text_prop))
+
+totais_legislatura %>% 
+  summarise(`Proposições` = n(),
+            `Palavras (Milhões)` = round(sum(palavras, na.rm = T) / 1e6, 1),
+            `Mediana palavras` = median(palavras, na.rm = T),
+            `Mediana caracteres` = median(caracteres, na.rm = T)) %>% 
+  reactable()
+```
+
+```{r}
+legislatura_atual %>% 
+  count(siglaTipo) %>% 
+  slice_max(order_by = n,
+            n = 15) %>% 
+  ggplot(aes(x = reorder(siglaTipo, -n),
+             y = n)) +
+  geom_chicklet(width = .7,
+                fill = "slateblue") +
+  labs(title = "Tipos de proposições mais frequentes",
+       subtitle = "Desde 2019",
+       x = "Tipo",
+       y = "Quantidade")
+```
+
+#### Alguns exemplos
+
+```{r}
+set.seed(13)
+
+proposicoes %>% 
+  select(siglaTipo, numero, ano, text_prop) %>% 
+  mutate(text_prop = str_sub(text_prop, 0, 200)) %>% 
+  sample_n(5) %>% 
+  reactable(striped = T)
+```
+
+### E as ementas?
+
+```{r}
+totais_ementas = proposicoes %>% 
+  summarise(palavras = str_count(ementa, '\\w+'),
+            caracteres = str_length(ementa))
+
+totais_ementas %>% 
+  summarise(`Palavras (Milhões)` = round(sum(palavras, na.rm = T) / 1e6, 1),
+            `Mediana palavras` = median(palavras, na.rm = T),
+            `Mediana caracteres` = median(caracteres, na.rm = T)) %>% 
+  reactable()
+```
+
+#### Desde 2019
+
+```{r}
+totais_ementas_periodo = legislatura_atual %>% 
+  summarise(palavras = str_count(ementa, '\\w+'),
+            caracteres = str_count(ementa))
+
+totais_ementas_periodo %>% 
+  summarise(`Palavras (Milhares)` = round(sum(palavras, na.rm = T) / 1e3, 1),
+            `Mediana palavras` = median(palavras, na.rm = T),
+            `Mediana caracteres` = median(caracteres, na.rm = T)) %>% 
+  reactable()
+```
+
+#### Alguns exemplos
+
+```{r}
+set.seed(13)
+
+legislatura_atual %>% 
+  select(siglaTipo, numero, ano, ementa) %>% 
+  slice_sample(n = 5) %>% 
+  reactable(striped = T)
+```
