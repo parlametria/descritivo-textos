@@ -1,0 +1,206 @@
+---
+title: "Textos de proposições"
+output:
+  html_document:
+    theme: paper
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  # message = FALSE,
+  # warning = FALSE,
+  # fig.cap = '',
+  # fig.align = 'center',
+  fig.width = 6,
+  fig.height = 5
+)
+Sys.setenv(LANGUAGE="pt-br")
+Sys.setlocale("LC_TIME", "pt_BR")
+options(scipen = 999)
+```
+
+```{r warning=FALSE, message=FALSE}
+library(tidyverse)
+library(reactable)
+library(ggchicklet)
+library(ggbeeswarm)
+library(hrbrthemes)
+library(here)
+theme_set(theme_ipsum_rc())
+```
+
+```{r}
+proposicoes = read_csv(here::here("data/ready/proposicoes.csv"),
+                              col_types = "cciTiccccTc") %>% 
+    filter(ano >= 2019,
+           siglaTipo %in% c('PL', 'PLP', 'PEC', 'EMS', 'EMC')) %>% 
+    mutate(extraivel = !is.na(text_prop))
+```
+
+```{r}
+proposicoes %>%
+    select(siglaTipo, descricaoTipo) %>% 
+    unique() %>% 
+    rename(Tipo = siglaTipo,
+           `Descrição` = descricaoTipo) %>% 
+    reactable(striped = T)
+```
+
+### Quantidade de proposições
+
+```{r}
+totais = proposicoes %>% 
+  summarise(palavras_proposicoes = str_count(text_prop, '\\w+'),
+            caracteres_proposicoes = str_length(text_prop))
+```
+
+#### Totais
+
+```{r}
+totais %>% 
+  summarise(Proposicoes = n(),
+            `Palavras (milhões)` = round(sum(palavras_proposicoes, na.rm = T) / 1e6, 1),
+            `Mediana palavras` = median(palavras_proposicoes, na.rm = T),
+            `Mediana caracteres` = median(caracteres_proposicoes, na.rm = T)) %>% 
+  reactable()
+```
+
+#### Por ano
+
+```{r}
+proposicoes %>% 
+  count(ano, sort = T) %>% 
+  ggplot(aes(x = as.factor(ano),
+             y = n)) +
+  geom_chicklet(width = .5,
+                fill = "steelblue") +
+  scale_y_continuous(breaks = seq(0, 6000, 1000),
+                     limits = c(0, 6000)) +
+  labs(x = NULL,
+       y = "nº de proposições",
+       title = "Proposições por ano")
+```
+
+#### Por tipo
+
+```{r}
+proposicoes %>% 
+  count(siglaTipo) %>% 
+  ggplot(aes(x = reorder(siglaTipo, -n),
+             y = n)) +
+  geom_chicklet(width = .7,
+                fill = "tomato") +
+  labs(x = "Tipo",
+       y = "Quantidade",
+       title = "Tipos de proposições mais frequentes")
+```
+
+#### Alguns exemplos
+
+```{r}
+set.seed(13)
+
+proposicoes %>% 
+  select(siglaTipo, numero, ano, text_prop) %>% 
+  mutate(text_prop = str_sub(text_prop, 0, 200)) %>% 
+  sample_n(5) %>% 
+  reactable(striped = T)
+```
+
+*** 
+
+### E as ementas?
+
+```{r}
+totais_ementas = proposicoes %>% 
+  summarise(palavras = str_count(ementa, '\\w+'),
+            caracteres = str_length(ementa))
+
+totais_ementas %>% 
+  summarise(`Palavras (Milhares)` = round(sum(palavras, na.rm = T) / 1e3, 1),
+            `Mediana palavras` = median(palavras, na.rm = T),
+            `Mediana caracteres` = median(caracteres, na.rm = T)) %>% 
+  reactable()
+```
+
+#### Alguns exemplos
+
+```{r}
+set.seed(13)
+
+proposicoes %>% 
+  select(siglaTipo, numero, ano, ementa) %>% 
+  slice_sample(n = 5) %>% 
+  reactable(striped = T)
+```
+
+
+### Quantas proposicoes conseguimos extrair texto?
+
+#### Por ano
+
+```{r}
+proposicoes %>% 
+    count(ano, extraivel, sort = T) %>% 
+    ggplot(aes(x = as.factor(ano),
+               y = n,
+               label = n,
+               fill = extraivel)) +
+    geom_chicklet(width = .9,
+                  position = "dodge") +
+    scale_y_log10(limits = c(1, 1e4)) +
+    labs(title = "Quantidade de proposições com texto extraível",
+         subtitle = "Por ano",
+         x = NULL,
+         y = "nº proposições",
+         fill = "Extraível")
+```
+
+```{r}
+proposicoes %>% 
+    count(ano, extraivel) %>% 
+    pivot_wider(names_from = extraivel,
+                values_from = n) %>% 
+    rename(extraivel = `TRUE`,
+           nao_extraivel = `FALSE`) %>% 
+    mutate(proporcao = round((extraivel / (extraivel + nao_extraivel)) * 100, 1),
+           sucesso = str_glue("{proporcao}%"),
+           perda = str_glue("{round(100 - proporcao, 1)}%")) %>% 
+    select(ano, extraimos = sucesso, perdemos = perda) %>% 
+    reactable(strip = T)
+```
+
+
+#### Por tipo
+
+```{r}
+proposicoes %>% 
+    count(siglaTipo, extraivel, sort = T) %>% 
+    ggplot(aes(x = reorder(siglaTipo, -n),
+               y = n,
+               label = n,
+               fill = extraivel)) +
+    geom_chicklet(width = .9,
+                  position = "dodge") +
+    scale_y_log10(limits = c(1, 15000)) +
+    labs(title = "Quantidade de proposições com texto extraível",
+         subtitle = "Por tipo",
+         x = NULL,
+         y = "nº proposições",
+         fill = "Extraível")
+```
+
+```{r}
+proposicoes %>% 
+    count(siglaTipo, extraivel) %>% 
+    pivot_wider(names_from = extraivel,
+                values_from = n) %>% 
+    rename(extraivel = `TRUE`,
+           nao_extraivel = `FALSE`) %>% 
+    mutate(proporcao = round((extraivel / (extraivel + nao_extraivel)) * 100, 1),
+           sucesso = str_glue("{proporcao}%"),
+           perda = str_glue("{round(100 - proporcao, 1)}%")) %>% 
+    select(siglaTipo, extraimos = sucesso, perdemos = perda) %>% 
+    reactable(strip = T)
+```
