@@ -1,5 +1,5 @@
 ---
-title: "Textos de proposições"
+title: "Textos de proposições - Legislatura Atual"
 output:
   html_document:
     theme: paper
@@ -149,7 +149,6 @@ proposicoes %>%
                fill = extraivel)) +
     geom_chicklet(width = .9,
                   position = "dodge") +
-    scale_y_log10(limits = c(1, 1e4)) +
     labs(title = "Quantidade de proposições com texto extraível",
          subtitle = "Por ano",
          x = NULL,
@@ -183,7 +182,6 @@ proposicoes %>%
                fill = extraivel)) +
     geom_chicklet(width = .9,
                   position = "dodge") +
-    scale_y_log10(limits = c(1, 15000)) +
     labs(title = "Quantidade de proposições com texto extraível",
          subtitle = "Por tipo",
          x = NULL,
