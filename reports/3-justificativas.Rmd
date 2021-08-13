@@ -24,7 +24,6 @@ options(scipen = 999)
 library(tidyverse)
 library(reactable)
 library(ggchicklet)
-library(ggbeeswarm)
 library(hrbrthemes)
 library(here)
 theme_set(theme_ipsum_rc())
@@ -73,8 +72,12 @@ justificativas %>%
               resizable = T)
 ```
 
-
 ### De quantas proposições conseguimos extrair as justificativas?
+
+Nos gráficos abaixo, consideramos como "não justificada" as proposições em que:
+
+1. Não é possível identificar no documento a seção de justificação;
+2. O documento não está em um formato de arquivo em que o texto pode ser extraído. 
 
 ```{r}
 justificativas %>% 
@@ -86,11 +89,13 @@ justificativas %>%
                   position = "dodge") +
     scale_y_continuous(breaks = seq(0, 6e3, 1e3),
                        limits = c(0, 5500)) +
+    scale_fill_manual(values = c("tomato", "steelblue"),
+                      labels = c("Não justificada", "Justificada")) +
     labs(title = "Quantidade de proposições justificadas",
          subtitle = "Por ano",
          x = NULL,
          y = "nº proposições",
-         fill = "Justificada")
+         fill = NULL)
 ```
 
 ```{r}
@@ -103,7 +108,7 @@ justificativas %>%
     mutate(proporcao = round((justificada / (justificada + nao_justificada)) * 100, 1),
            sucesso = str_glue("{proporcao}%"),
            perda = str_glue("{round(100 - proporcao, 1)}%")) %>% 
-    select(ano, extraimos = sucesso, perdemos = perda) %>% 
+    select(Ano = ano, Extraimos = sucesso, Perdemos = perda) %>% 
     reactable(strip = T)
 ```
 
@@ -116,12 +121,13 @@ justificativas %>%
     geom_chicklet(width = .5,
                   position = "dodge") +
     scale_y_continuous(breaks = seq(0, 12e3, 3e3),
-                       limits = c(0, 12e3)) +
+    limits = c(0, 12e3)) +
+    scale_fill_manual(values = c("tomato", "steelblue"),
+                      labels = c("Não justificada", "Justificada")) +
     labs(title = "Quantidade de proposições justificadas",
          subtitle = "Por tipo",
-         x = "Tipo",
          y = "nº proposições",
-         fill = "Justificada")
+         fill = NULL)
 ```
 
 ```{r}
@@ -135,6 +141,6 @@ justificativas %>%
     mutate(proporcao = round((justificada / (justificada + nao_justificada)) * 100, 1),
            sucesso = str_glue("{proporcao}%"),
            perda = str_glue("{round(100 - proporcao, 1)}%")) %>% 
-    select(siglaTipo, extraimos = sucesso, perdemos = perda) %>% 
+    select(Tipo = siglaTipo, Extraimos = sucesso, Perdemos = perda) %>% 
     reactable(strip = T)
 ```
