@@ -130,7 +130,22 @@ falas %>%
     reactable(striped = T, searchable = T)
 ```
 
-## Comissões permanentes com transcrições em 2021
+## Comissões permanentes sem transcrições em 2021
+
+```{r}
+porano_w = falas %>% 
+  filter(categoria_comissao == "Comissão Permanente") %>% 
+  mutate(ano = year(data) %>% as.character()) %>% 
+  count(comissao, ano) %>% 
+  pivot_wider(names_from = ano, values_from = n)
+
+porano_w %>% 
+  filter(is.na(`2021`)) %>% 
+  select(comissao)
+```
+
+Além dessas, 2 outras comissões não têm transcrições em 2019 também: COMISSÃO DE DES. ECONÔMICO, INDÚSTRIA, COMÉRCIO E SERVIÇOS e COMISSÃO DE TURISMO.
+
 
 ```{r}
 falas %>% 
