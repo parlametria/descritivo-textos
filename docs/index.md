@@ -15,3 +15,5 @@
   2. [Texto das proposições legislativas](https://drive.google.com/file/d/1eBXKYUvWc8RmAV9g1Z3ZJdAg1ySocVqo/view?usp=sharing)
   
   3. [Texto das justificativas de proposições (2019-2021)](https://drive.google.com/file/d/1oWuEZZO7C-wI8ENQ3ODr9LUqJxZcUWe1/view?usp=sharing)
+  
+  4. [Textos de proposições e suas justificativas - Legislatura Atual (2019-13/09/2021)](https://drive.google.com/file/d/1sgWH5ntGezcpH7o5pwqzc2rtwwuxRu0r/view?usp=sharing)
