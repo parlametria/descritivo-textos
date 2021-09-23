@@ -1,15 +1,14 @@
-library(tidyverse)
+library(readr)
+library(dplyr)
+library(stringr)
+
+justificativas = read_csv(here::here("data/ready/justificativas_legislatura_atual_13-09-21.csv"),
+                          col_types = cols(.default = col_character())) %>% 
+    janitor::clean_names()
 
 temas = read_csv2("https://dadosabertos.camara.leg.br/arquivos/proposicoesTemas/csv/proposicoesTemas-2021.csv", 
-                  col_types = cols(.default = col_character(), 
-                                   numero = col_integer(),
-                                   ano = col_integer())) %>% 
+                  col_types = cols(.default = col_character())) %>% 
     janitor::clean_names()
-
-justificativas = read_csv(here::here("data/ready/justificativas_19-21.csv"),
-                          col_types = c("cciTiccccTcccll")) %>% 
-    janitor::clean_names()
-
 
 interessam = temas %>% 
     filter(str_detect(tema, "Meio Ambiente|Fundiária|Agricultura"), 
@@ -26,4 +25,4 @@ interessa_cj %>%
 
 interessa_cj %>% 
     filter(!is.na(extraivel)) %>% 
-    write_csv(here::here("data/ready/socioambiental-2021.csv"))
+    write_csv(here::here("data/ready/socioambiental-2021-20210916.csv"))

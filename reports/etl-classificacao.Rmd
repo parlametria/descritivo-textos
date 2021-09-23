@@ -21,20 +21,27 @@ options(scipen = 999)
 ```
 
 ```{r setup warning=FALSE, message=FALSE}
-library(tidyverse)
-library(hrbrthemes)
-library(here)
-theme_set(theme_ipsum_rc())
+# library(tidyverse)
+library(readr)
+library(dplyr)
+# library(hrbrthemes)
+# library(here)
+# theme_set(theme_ipsum_rc())
 ```
 
 ```{r}
-justificativas = read_csv(here::here("data/ready/justificativas_19-21.csv"),
-                          col_types = c("cciTiccccTcccll")) %>% 
-  janitor::clean_names()
+justificativas = read_csv(
+    here::here("data/ready/justificativas_legislatura_atual_13-09-21.csv"),
+    # col_types = c("cciTiccccTcccll")
+    col_types = cols(.default = col_character())
+    ) %>%
+    janitor::clean_names()
+    
+todas_ma = read_csv("https://github.com/parlametria/relatorio-bianuario-ma/raw/main/data/inputs/2-fetch-input/proposicoes/proposicoes_preenchidas.csv", 
+                    col_types = cols(.default = col_character()))
 
-todas_ma = read_csv("https://github.com/parlametria/relatorio-bianuario-ma/raw/main/data/inputs/2-fetch-input/proposicoes/proposicoes_preenchidas.csv")
-
-avaliacoes = read_csv("https://github.com/parlametria/relatorio-bianuario-ma/raw/main/data/ready/proposicoes.csv")
+avaliacoes = read_csv("https://github.com/parlametria/relatorio-bianuario-ma/raw/main/data/ready/proposicoes.csv", 
+                      col_types = cols(.default = col_character()))
 ```
 
 ```{r}
@@ -56,10 +63,9 @@ dataset = todas_ma %>%
         classificacao_ambientalismo == "Fora do tema",
         0,
         1
-    ), 
-    id = as.character(id))
+    ))
 
-cj = dataset %>%  ## TO DO: PQ HÁ PROPS APENAS EM X?
+cj = dataset %>%  
   left_join(select(justificativas, -ementa)) %>% 
   filter(!is.na(data_apresentacao))
 
@@ -73,7 +79,7 @@ final = bind_rows(cj, extras) %>%
   filter(!is.na(justificada), justificada)  
 
 final_peq = cj %>% 
-  filter(!is.na(justificada), justificada)  
+  filter(!is.na(justificada), as.logical(justificada))
 
 final %>% 
   count(relacionada, justificada)
@@ -85,7 +91,7 @@ final_peq %>%
 ```{r}
 final_peq %>% 
   filter(!is.na(texto_completo)) %>% 
-  write_csv("gabarito.csv")
+  write_csv(here::here("data/classificacao/gabarito-20200916.csv"))
 
 final %>% 
   filter(!is.na(texto_completo)) %>% 
