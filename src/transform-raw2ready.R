@@ -18,8 +18,8 @@ transform_comissoes = function(path = "data/raw/comissoes") {
         full.names = T
     )
     
-    arq_metadados = todos[basename(files) == "metadados_transcricoes.csv"]
-    transcricoes = todos[basename(files) != "metadados_transcricoes.csv"]
+    arq_metadados = todos[basename(todos) == "metadados_transcricoes.csv"]
+    transcricoes = todos[basename(todos) != "metadados_transcricoes.csv"]
     
     metadados = read_csv(
         arq_metadados,

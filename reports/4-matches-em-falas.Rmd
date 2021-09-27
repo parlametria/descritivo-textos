@@ -1,0 +1,132 @@
+---
+title: "Matches nas falas em comissões"
+output:
+  html_document:
+    theme: paper
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  # message = FALSE,
+  # warning = FALSE,
+  # fig.cap = '',
+  # fig.align = 'center',
+  fig.width = 8,
+  fig.height = 5
+)
+Sys.setenv(LANGUAGE="pt-br")
+Sys.setlocale("LC_TIME", "pt_BR")
+options(scipen = 999)
+```
+
+```{r warning=FALSE, message=FALSE}
+library(tidyverse)
+library(here)
+library(reactable)
+library(ggchicklet)
+library(lubridate)
+library(hrbrthemes)
+theme_set(theme_ipsum_rc())
+```
+
+
+```{r warning=FALSE, message=FALSE}
+metadados_deputados <- read_csv2(here::here("data/raw/deputados.csv"),
+                                 col_types = cols(.default = col_character(),
+                                                  dataNacimento = col_date(),
+                                                  dataFalecimento = col_date())) %>% 
+  mutate(id = purrr::map(.x = uri, .f = ~str_split(.x, '/')[[1]][7]) %>% unlist())
+
+falas <- read_csv(here("data/ready/falas-comissoes-legislatura.csv"))
+
+metadados_deputados <- read_csv(here::here("data/raw/metadados_deputados.csv"),
+                                col_types = cols(.default = col_character(),
+                                                 idLegislatura = col_integer())) %>% 
+  janitor::clean_names()
+
+deputados <- metadados_deputados %>% 
+    select(id, nome, uf = sigla_uf, partido = sigla_partido)
+```
+
+## Match a partir do nome. 
+
+```{r echo=TRUE}
+deputados_nome = falas %>% 
+    inner_join(deputados,
+               by = c("nome", "uf", "partido"),
+               keep = T,
+               suffix = c("_falas", "_meta")) %>% 
+    select(id, nome_falas, nome_meta, uf_falas, 
+           uf_meta, partido_falas, partido_meta) %>% 
+    unique()
+
+matches <- deputados_nome %>% 
+  summarise(matches = n()) %>% 
+  pull(matches)
+```
+
+Utilizando o nome, `r matches` deputados foram recuperados.
+
+## Join utilizando o nome sem honoríficos
+
+```{r echo=TRUE}
+PADRAO = "(?i)deputado|deputada|-|a dra|a sr|o sr|coordenador|coordenadora|entrevistadora|ministro|moderador|presidente|presidenta|relator|repórter"
+
+deputados_sem_honorificos = falas %>% 
+    mutate(sem_honorifico = str_trim(str_remove(string = nome, pattern = PADRAO))) %>% 
+    inner_join(deputados,
+               by = c("sem_honorifico" = "nome", "uf", "partido")) %>% 
+    select(id, nome, sem_honorifico, uf, partido) %>% 
+    unique()
+
+matches_sem_honorificos <- deputados_sem_honorificos %>% 
+  summarise(matches = n()) %>% 
+  pull(matches) 
+```
+
+Utilizando os nomes sem honorificos, `r matches_sem_honorificos` deputados foram recuperados.
+
+## Fuzzy matching - Qgram
+
+```{r echo=TRUE}
+library(fuzzyjoin)
+
+deputados_qgram = falas %>% 
+  stringdist_join(deputados,
+                  mode = "inner",
+                  max_dist = 1,
+                  by = c(nome = "nome"),
+                  method = "qgram") %>% 
+  rename_with(gsub, pattern = '\\.x', replacement = '_falas') %>% 
+  rename_with(gsub, pattern = '\\.y', replacement = '_meta') %>% 
+  select(id, nome_falas, nome_meta, uf_falas, uf_meta) %>% 
+  unique()
+
+matches_qgram <- deputados_qgram %>% 
+  summarise(matches = n()) %>% 
+  pull(matches)
+```
+
+Utilizando fuzzy matching com o qgram, `r matches_qgram` deputados foram recuperados, mas com matches errados. Os deputados associados incorretamente estão listados abaixo.
+           
+```{r echo=TRUE}
+erros <- deputados_qgram %>% 
+  filter(nome_meta != nome_falas,
+         !(id %in% c(160601, 178944, 139260))) %>% 
+  select(id, nome_meta, nome_falas)
+
+erros %>% reactable(striped = T, searchable = T)
+
+```
+
+Obs.: Alguns ids foram ignorados aqui para que a tabela mostrasse apenas as situações onde o match falha. Esses ids precisaram ser ignorados pois representam situações onde o fuzzy matching foi bem sucedido entre nomes que estão escritos de formas diferentes. A tabela abaixo lista estas situações.
+
+```{r}
+ids_selecionados = deputados_qgram %>% 
+  filter(id %in% c(160601, 178944, 139260)) %>% 
+  select(id, nome_meta, nome_falas)
+
+ids_selecionados %>% reactable(striped = T)
+```
+
